@@ -54,12 +54,25 @@ const MainTabNavigator = () => {
 };
 
 const App = () => {
+  //this expires every hour :(
+
+   async function getdata(){
+    const response = await fetch('http://127.0.0.1:5000/api/playlists');
+    const data = await response.json();
+    console.log(data);
+
+  }
+  getdata();
+  
   return (
+   
+
+    
     <NavigationContainer>
+      <div>Hello world!</div>
 
 
-        <Stack.Screen name="Main" component={MainTabNavigator} />
-    </NavigationContainer>
+     </NavigationContainer>
   );
 };
 

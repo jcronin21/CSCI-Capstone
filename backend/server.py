@@ -1,6 +1,7 @@
 from flask import Flask, render_template, redirect, request
 import requests
-import backend.spotify_auth as spotify_auth
+import spotify_auth as spotify_auth
+from flask_cors import CORS
 
 
 access_token = None
@@ -9,6 +10,7 @@ unauthorized_message = "You need to log in. Go to the login site and then try ag
 
 
 app = Flask(__name__)
+CORS(app)
 
 
 @app.route('/')
@@ -33,15 +35,15 @@ def process_token_spotify():
 
     access_token = credentials.get("access_token")
     refresh_token = credentials.get("refresh_token")
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "scope": credentials.get('expires_in'),
-        "token_type": credentials.get("token_type"),
-        "expires_in": credentials.get("expires_in"),
-        "message": "Navigate to homepage (http://localhost:5000) to see actual data now that you have an"
-    }
-
+    # return {
+    #     "access_token": access_token,
+    #     "refresh_token": refresh_token,
+    #     "scope": credentials.get('expires_in'),
+    #     "token_type": credentials.get("token_type"),
+    #     "expires_in": credentials.get("expires_in"),
+    #     "message": "Navigate to homepage (http://localhost:5000) to see actual data now that you have an"
+    # }
+    return f'<a href ="http://localhost:19006/"> go to react app! </a>'
 
 @app.route('/api/track')
 def get_track():
