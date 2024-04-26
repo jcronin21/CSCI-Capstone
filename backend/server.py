@@ -45,16 +45,16 @@ def process_token_spotify():
     # }
     return f'<a href ="http://localhost:19006/"> go to react app! </a>'
 
-@app.route('/api/track')
-def get_track():
-    track_id = '2TpxZ7JUBn3uw46aR7qd6V'
-    if access_token is None:
-        return {'unauthorized': unauthorized_message}
-    else:
-        headers = {"Authorization": f"Bearer {access_token}"}
-        url = f'https://api.spotify.com/v1/tracks/{track_id}'
-        data = requests.get(url, headers=headers)
-        return data.json()
+# @app.route('/api/track')
+# def get_track():
+#     track_id = '2TpxZ7JUBn3uw46aR7qd6V'
+#     if access_token is None:
+#         return {'unauthorized': unauthorized_message}
+#     else:
+#         headers = {"Authorization": f"Bearer {access_token}"}
+#         url = f'https://api.spotify.com/v1/tracks/{track_id}'
+#         data = requests.get(url, headers=headers)
+#         return data.json()
 
 
 @app.route('/api/playlists')

@@ -10,9 +10,14 @@ const RandomScreen = () => {
     searchTracks();
   }, []);
 
-
+  
   const searchTracks = async () => {
-    const query = 'Once'; //I will fix this later just testing
+    const query = inputValue.trim();
+    if (!query) {
+      console.error('Please enter a valid track to search.'); 
+      return;
+    }
+  
     const searchType = 'track';
   
     try {
@@ -21,16 +26,20 @@ const RandomScreen = () => {
         throw new Error('Error fetching search results');
       }
       const data = await response.json();
-      console.log('Search results:', data); 
-      if (data.items && data.items.length > 0) {
-        setSearchResults(data.items);
+      console.log('Search results:', data);
+  
+      if (data.tracks && data.tracks.items && data.tracks.items.length > 0) {
+        setSearchResults(data.tracks.items);
       } else {
-        console.error('No tracks found in search results.'); 
+        console.error('No tracks found in search results.');
+        setSearchResults([]); //clean it out
       }
     } catch (error) {
-      console.error('Error fetching search results:', error); 
+      console.error('Error fetching search results:', error);
     }
   };
+  
+  
   
   const playTrack = (track) => {
     // Implement play functionality here
@@ -43,6 +52,7 @@ const RandomScreen = () => {
         <Image
           source={{ uri: item.album.images[0].url }}
           style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10 }}
+          onError={(error) => console.log('Image load error:', error.nativeEvent.error)}
         />
         <View>
           <Text>{item.name}</Text>
@@ -66,7 +76,7 @@ const RandomScreen = () => {
         data={searchResults}
         keyExtractor={(item) => item.id}
         renderItem={renderTrackItem}
-        style={{ marginTop: 20 }}
+        style={{ marginTop: 20, width: '100%' }}
       />
     </View>
   );
