@@ -88,3 +88,28 @@ def get_user():
         url = 'https://api.spotify.com/v1/me'
         data = requests.get(url, headers=headers)
         return data.json()
+
+
+@app.route('/api/search')
+def search_spotify():
+    if access_token is None:
+        return {'unauthorized': unauthorized_message}
+    
+    query = request.args.get('q')
+    search_type = request.args.get('type')
+    
+    if not query or not search_type:
+        return {'error': 'Please enter a track to search'}
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {'q': query, 'type': search_type}
+
+    try:
+        response = requests.get('https://api.spotify.com/v1/search', headers=headers, params=params)
+        if response.ok:
+            return response.json()
+        else:
+            return {'error': 'Error fetching search results from Spotify API'}
+    except requests.exceptions.RequestException as e:
+        return {'error': f'Error: {str(e)}'}
+

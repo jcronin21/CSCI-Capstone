@@ -4,35 +4,34 @@ import { View, Text, Button, TextInput, FlatList, TouchableOpacity, Image } from
 const RandomScreen = () => {
   const [inputValue, setInputValue] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const SPOTIFY_API_KEY = 'b6ff98053c404aae853a4a1da8ac29ef'; 
+
 
   useEffect(() => {
     searchTracks();
   }, []);
 
+
   const searchTracks = async () => {
-    if (inputValue.trim() !== '') {
-      try {
-        const response = await fetch(`https://api.spotify.com/v1/search?q=${inputValue}&type=track`, {
-          headers: {
-            Authorization: `Bearer ${SPOTIFY_API_KEY}`
-          }
-        });
-        if (!response.ok) {
-          throw new Error('Error fetching search results');
-        }
-        const data = await response.json();
-        if (data.tracks && data.tracks.items) {
-          setSearchResults(data.tracks.items);
-        } else {
-          console.error('No tracks found in search results.');
-        }
-      } catch (error) {
-        console.error('Error fetching search results:', error);
+    const query = 'Once'; //I will fix this later just testing
+    const searchType = 'track';
+  
+    try {
+      const response = await fetch(`http://localhost:5000/api/search?q=${query}&type=${searchType}`);
+      if (!response.ok) {
+        throw new Error('Error fetching search results');
       }
+      const data = await response.json();
+      console.log('Search results:', data); 
+      if (data.items && data.items.length > 0) {
+        setSearchResults(data.items);
+      } else {
+        console.error('No tracks found in search results.'); 
+      }
+    } catch (error) {
+      console.error('Error fetching search results:', error); 
     }
   };
-
+  
   const playTrack = (track) => {
     // Implement play functionality here
     console.log('Playing track:', track);
@@ -78,6 +77,8 @@ export default RandomScreen;
 
 
 
+//use this ??? 
+//http://127.0.0.1:5000/spotify-login
 
 
 
@@ -86,9 +87,8 @@ export default RandomScreen;
 
 
 
-
-
-
+//dont forget to refresh
+//api keys expire every hour...!
 
 
 

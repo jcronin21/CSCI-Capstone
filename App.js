@@ -69,10 +69,8 @@ const App = () => {
 
     
     <NavigationContainer>
-      <div>Hello world!</div>
-
-
-     </NavigationContainer>
+    <MainTabNavigator />
+  </NavigationContainer>
   );
 };
 
