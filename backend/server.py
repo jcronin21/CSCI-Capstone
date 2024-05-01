@@ -67,6 +67,16 @@ def get_user_playlists():
         data = requests.get(url, headers=headers)
         return data.json()
 
+@app.route('/api/profile')
+def get_user_profile():
+    if access_token is None:
+        return{'unauthorized':unauthorized_message}
+    else:
+        headers = {'Authorization':f"Bearer{access_token}"}
+        url = 'https://api.spotify.com/v1/me/profile'
+        data = requests.get(url,headers=headers)
+        return data.json()
+
 
 @app.route('/api/recently-played')
 def get_recently_played():
