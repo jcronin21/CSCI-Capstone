@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ActivityIndicator, FlatList, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 const ProfileScreen = () => {
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [playlists, setPlaylists] = useState([]);
 
@@ -24,6 +26,17 @@ const ProfileScreen = () => {
     }
   };
 
+
+
+  const renderPlaylistItem = ({ item }) => (
+    <TouchableOpacity onPress={() => handlePlaylistPress(item.id)}>
+      <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#ccc' }}>
+        <Text style={{ fontWeight: 'bold' }}>{item.name}</Text>
+        <Text>{item.description}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -31,15 +44,6 @@ const ProfileScreen = () => {
       </View>
     );
   }
-  const renderPlaylistItem = ({ item }) => (
-    <TouchableOpacity onPress={() => { /*add some stuff here later */ }}>
-      <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#ccc' }}>
-        <Text style={{ fontWeight: 'bold' }}>{item.name}</Text>
-        <Text>{item.description}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-  
 
   return (
     <View style={{ flex: 1 }}>
@@ -51,6 +55,6 @@ const ProfileScreen = () => {
       />
     </View>
   );
-}
+};
 
 export default ProfileScreen;

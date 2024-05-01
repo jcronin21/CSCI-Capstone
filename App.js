@@ -13,14 +13,7 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = () => {
-
-  // async function getdata(){
-  //   const response = await fetch('https://www.apitutor.org/spotify/simple/v1/search?q=beyonce&type=album&limit=3');
-  //   const data = await response.json();
-  //   console.log(data);
-
-  // }
-  // getdata();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
