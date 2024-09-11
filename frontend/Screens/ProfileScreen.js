@@ -29,12 +29,12 @@ const ProfileScreen = () => {
 
 
   const renderPlaylistItem = ({ item }) => (
-    <TouchableOpacity onPress={() => handlePlaylistPress(item.id)}>
+    // <TouchableOpacity onPress={() => handlePlaylistPress(item.id)}>
       <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#ccc' }}>
         <Text style={{ fontWeight: 'bold' }}>{item.name}</Text>
         <Text>{item.description}</Text>
       </View>
-    </TouchableOpacity>
+    // </TouchableOpacity>
   );
 
   if (loading) {

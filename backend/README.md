@@ -17,3 +17,9 @@ and then you will be interacting with spotify under the user that has logged in
 goal - display a playlist and see if you can display songs in playlist
 after that youll be good to go
 
+
+
+update 9/2/2024
+to run open two terminals 
+the first terminal should be cd into backend and then type: poetry run flask run --debug
+the second terminal should be cd into first project and then type expo start
