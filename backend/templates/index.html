@@ -1,57 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify Data Tester</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        //this will redirect to the Spotify login on page load *loading page if you will*
+        window.onload = function() {
+            window.location.href = "/auth0-login"; //goes to the Auth0 login route
+        };
+    </script>
 </head>
-
 <body>
     <h1>Spotify Data Tester</h1>
-    <h2>Authentication</h2>
-    <ul>
-        <li>
-            <a href="/spotify-login">/spotify-login</a>: Click this link to log in. Once you do, your token will be
-            saved as a server session variable and you can query Spotify as if you're the current Spotify user.
-        </li>
-    </ul>
-    <h2>Sample API Endpoints with Token Applied</h2>
-    <p>From the perspective of the logged in user. If you're not logged in, should redirect you to /spotify-login</p>
-    <ul>
-        <li>
-            <a href="/api/track">/api/track</a>: Returns a hard-coded track
-        </li>
-        <li>
-            <a href="/api/recently-played">/api/recently-played</a>: Current user's recently played tracks
-        </li>
-        <li>
-            <a href="/api/playlists">/api/playlists</a>: Current user's playlists
-        </li>
-        <li>
-            <a href="/api/user">/api/user</a>: Current user info
-        </li>
-    </ul>
-    <h2>Useful Spotify Links</h2>
-    <ul>
-        <li>
-            <a href="https://www.spotify.com/us/account/apps/">https://www.spotify.com/us/account/apps/</a>: To revoke
-            permission so that you can re-test your app flow with different scopes.
-        </li>
-        <li>
-            <a
-                href="https://developer.spotify.com/documentation/web-api/tutorials/code-flow">https://developer.spotify.com/documentation/web-api/tutorials/code-flow</a>
-            Authentication
-            Documentation for the workflow this app uses.
-        </li>
-        <li>
-            <a href="https://github.com/vanortg/Flask-Spotify-Auth">https://github.com/vanortg/Flask-Spotify-Auth</a>:
-            Code upon which this workflow is loosely based.
-        </li>
-        <li><a
-                href="https://developer.spotify.com/documentation/web-api">https://developer.spotify.com/documentation/web-api</a>:
-            Spotify API Documentation</li>
-    </ul>
+    <p>Redirecting to Spotify login...</p>
 </body>
-
 </html>
