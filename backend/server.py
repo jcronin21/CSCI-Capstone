@@ -15,7 +15,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "aOY+DIo1RZ0uQylPU7uzTDthtqr8PvHv
 #Session cookie configuration
 app.config.update(
     SESSION_COOKIE_SAMESITE="Lax",  #make sure that cookies are sent with cross-site requests
-    SESSION_COOKIE_SECURE=False,    #true if you're using HTTPS
+    SESSION_COOKIE_SECURE=True,    #true if you're using HTTPS
     SESSION_PERMANENT=False         #False for non permanent sessions
 )
 
@@ -74,7 +74,7 @@ def auth0_callback():
         session['auth0_token'] = token
         userinfo = auth0.parse_id_token(token)
         session['user'] = userinfo
-        return redirect('/dashboard')
+        return redirect('https://d1be-104-145-72-23.ngrok-free.app')
     except Exception as e:
         print(f"Auth0 Error: {e}")
         return jsonify({"error": str(e)})
@@ -103,7 +103,7 @@ def process_token_spotify():
     access_token = credentials.get("access_token")
     refresh_token = credentials.get("refresh_token")
 
-    return f'<a href ="http://localhost:19006/">Go to React app!</a>'
+    return f'<a href ="https://d1be-104-145-72-23.ngrok-free.app/">Go to React app!</a>'
 
 @app.route('/api/playlists')
 def get_user_playlists():
