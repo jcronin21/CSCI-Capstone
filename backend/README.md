@@ -23,3 +23,12 @@ update 9/2/2024
 to run open two terminals 
 the first terminal should be cd into backend and then type: poetry run flask run --debug
 the second terminal should be cd into first project and then type expo start
+
+
+update 11/21/2024
+https://af66-104-145-72-23.ngrok-free.app/spotify-login
+
+
+update 11/23/2024
+expo start - backend
+poetry run flask run --debug - frontend

@@ -74,3 +74,10 @@ yarn-error.*
 *.tsbuildinfo
 
 # @end expo-cli
+
+#js
+index.js
+server.js
+
+#py
+server.py
