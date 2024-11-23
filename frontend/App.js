@@ -40,7 +40,7 @@ export default function App() {
 
   useEffect(() => {
     //temp token, put your own token here
-    const hardcodedToken = 'BQAfnal0YCHepK9roM1-ivUAI6Unm52BPcKLLoV1VCjowav_3AyR_nH0qNNu3ldaLkaPk0zcKdlaqO-sZO5CiMKAUdCg9_AsHn8spvnrfHCbL_F23BhgY_4nKI9Dw6LICZWsFY0LnnqL2SH_hgmr4E06p4KmSZk1XUioVFYcamzFN6y0n1UylnQfZDgYand04XA2XiW7jKNKz2IuyOm5FoIuLhMrr91_y_Eg5zLUcup0M_neBnSIyrH72u4II6KcBGxDVQ9E';
+    const hardcodedToken = '';
     setAccessToken(hardcodedToken);
   }, []);
 
