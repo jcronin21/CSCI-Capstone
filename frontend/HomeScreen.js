@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   createModalButton: {
-    backgroundColor: '#1DB954',
+    backgroundColor: '#87ceeb',
   },
   cancelModalButton: {
     backgroundColor: '#888',
