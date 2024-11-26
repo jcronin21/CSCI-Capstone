@@ -45,7 +45,19 @@ export default function SearchScreen({ accessToken, userPlaylists }) {
       Alert.alert('Error', 'Could not play the preview.');
     }
   };
+  const pausePreview = async() =>{
+    if(sound){
+      try{
+        await sound.pauseAsync();
+      }catch(error){
+        console.error('Error pausing playback:',error);
+        Alert.alert('Error','Could not pause the preview :(');
+      }
+    }else{
+      Alert.alert('No audio', 'No audio is currently playing');
+    }
 
+  };
   const handleAddToPlaylist = (track) => {
     setSelectedTrack(track);
     setIsModalVisible(true);
@@ -123,9 +135,9 @@ export default function SearchScreen({ accessToken, userPlaylists }) {
 
             <TouchableOpacity
                 style={styles.pauseButton}
-                onPress={() => pauseSong(item.preview_url)}
+                onPress={() => pausePreview(item.preview_url)}
               >
-                <Text style={styles.playButtonText}>▶</Text>
+                <Text style={styles.pauseButtonText}>||</Text>
               </TouchableOpacity>
             
           </View>
@@ -156,7 +168,7 @@ export default function SearchScreen({ accessToken, userPlaylists }) {
               style={styles.cancelButton}
               onPress={() => setIsModalVisible(false)}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>Go Back</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -220,6 +232,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 18,
+  },
+  pauseButtonText:{
+    color:'#fff',
+    fontWeight:'bold',
+    fontSize:18,
+    color:'5A4FCF',
+  },
+  puaseButton:{
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#5A4FCF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
   },
   noPreview: {
     fontSize: 12,
