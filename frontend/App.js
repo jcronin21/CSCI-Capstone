@@ -7,9 +7,10 @@ import { Ionicons } from '@expo/vector-icons';
 // Screens
 import HomeScreen from './HomeScreen';
 import PlaylistDetails from './PlaylistDetails';
-import SongSelector from './SongSelector'; 
+import SongSelector from './SongSelector';
 import SearchScreen from './SearchScreen';
 import ProfileScreen from './ProfileScreen';
+import FollowerProfile from './FollowerProfile';
 import LoginScreen from './LoginScreen';
 
 const Tab = createBottomTabNavigator();
@@ -17,16 +18,10 @@ const Stack = createStackNavigator();
 
 const HomeStack = ({ accessToken }) => (
   <Stack.Navigator>
-    <Stack.Screen
-      name="Home"
-      options={{ title: 'Your Playlists' }}
-    >
+    <Stack.Screen name="Home" options={{ title: 'Your Playlists' }}>
       {(props) => <HomeScreen {...props} accessToken={accessToken} />}
     </Stack.Screen>
-    <Stack.Screen
-      name="PlaylistDetails"
-      component={PlaylistDetails}
-    />
+    <Stack.Screen name="PlaylistDetails" component={PlaylistDetails} />
     <Stack.Screen
       name="SongSelector"
       component={SongSelector}
@@ -35,11 +30,24 @@ const HomeStack = ({ accessToken }) => (
   </Stack.Navigator>
 );
 
+const ProfileStack = ({ accessToken }) => (
+  <Stack.Navigator>
+    <Stack.Screen name="ProfileScreen">
+      {(props) => <ProfileScreen {...props} accessToken={accessToken} />}
+    </Stack.Screen>
+    <Stack.Screen
+      name="FollowerProfile"
+      component={FollowerProfile}
+      options={{ title: 'Follower Profile' }}
+    />
+  </Stack.Navigator>
+);
+
 export default function App() {
   const [accessToken, setAccessToken] = useState(null);
 
   useEffect(() => {
-    //temp token, put your own token here
+    //put your own token here
     const hardcodedToken = '';
     setAccessToken(hardcodedToken);
   }, []);
@@ -60,8 +68,8 @@ export default function App() {
               }
               return <Ionicons name={iconName} size={size} color={color} />;
             },
-            tabBarActiveTintColor: '#1DB954',
-            tabBarInactiveTintColor: 'gray',
+            tabBarActiveTintColor: '#8f5bce',
+            tabBarInactiveTintColor: '#050707',
             headerShown: false,
           })}
         >
@@ -72,7 +80,7 @@ export default function App() {
             {(props) => <SearchScreen {...props} accessToken={accessToken} />}
           </Tab.Screen>
           <Tab.Screen name="Profile">
-            {(props) => <ProfileScreen {...props} accessToken={accessToken} />}
+            {(props) => <ProfileStack {...props} accessToken={accessToken} />}
           </Tab.Screen>
         </Tab.Navigator>
       ) : (

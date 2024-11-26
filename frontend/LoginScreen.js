@@ -34,21 +34,24 @@ export default function LoginScreen({ setAccessToken }) {
   );
 }
 
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#8f5bce',
   },
   text: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color:'#ffffff',
   },
   button: {
     padding: 15,
-    backgroundColor: '#1DB954',
+    backgroundColor: '#5deaf6',
     borderRadius: 5,
     alignItems: 'center',
   },

@@ -1,26 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  TextInput,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import axios from 'axios';
 
 export default function SongSelector({ route, navigation }) {
   const { playlistId, accessToken } = route.params;
+  const [query, setQuery] = useState('');
   const [songs, setSongs] = useState([]);
   const [selectedSongs, setSelectedSongs] = useState([]);
 
-  useEffect(() => {
-    const fetchSavedTracks = async () => {
-      try {
-        const response = await axios.get('https://api.spotify.com/v1/me/tracks', {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        setSongs(response.data.items.map((item) => item.track));
-      } catch (error) {
-        console.error('Error fetching saved tracks:', error);
-      }
-    };
-
-    fetchSavedTracks();
-  }, [accessToken]);
+  const searchTracks = async () => {
+    try {
+      const response = await axios.get('https://api.spotify.com/v1/search', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { q: query, type: 'track', limit: 10 },
+      });
+      setSongs(response.data.tracks.items);
+    } catch (error) {
+      console.error('Error searching tracks:', error);
+    }
+  };
 
   const handleSongToggle = (songId) => {
     setSelectedSongs((prevSelected) =>
@@ -42,7 +48,7 @@ export default function SongSelector({ route, navigation }) {
         }
       );
       Alert.alert('Success', 'Songs added to the playlist!');
-      navigation.goBack(); 
+      navigation.goBack();
     } catch (error) {
       console.error('Error adding songs to playlist:', error);
       Alert.alert('Error', 'Failed to add songs to the playlist.');
@@ -51,7 +57,13 @@ export default function SongSelector({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Select Songs</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Search for songs..."
+        value={query}
+        onChangeText={setQuery}
+        onSubmitEditing={searchTracks}
+      />
       <FlatList
         data={songs}
         keyExtractor={(item) => item.id}
@@ -63,10 +75,12 @@ export default function SongSelector({ route, navigation }) {
             ]}
             onPress={() => handleSongToggle(item.id)}
           >
-            <Text>{item.name}</Text>
-            <Text style={styles.artistName}>
-              {item.artists.map((artist) => artist.name).join(', ')}
-            </Text>
+            <View style={styles.songDetails}>
+              <Text style={styles.songName}>{item.name}</Text>
+              <Text style={styles.artistName}>
+                {item.artists.map((artist) => artist.name).join(', ')}
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
       />
@@ -87,24 +101,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    color:'#CCCCFF',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 20,
   },
   songItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 15,
     backgroundColor: '#f9f9f9',
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
-  selectedSong: {
-    backgroundColor: '#d1f7d6',
+  songDetails: {
+    flex: 1,
+  },
+  songName: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   artistName: {
     fontSize: 14,
     color: '#666',
+  },
+  selectedSong: {
+    backgroundColor: '#d1f7d6',
   },
   addButton: {
     marginTop: 20,

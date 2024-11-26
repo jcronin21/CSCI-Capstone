@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import {View,Text,StyleSheet,Image,FlatList,TouchableOpacity,} from 'react-native';
 import axios from 'axios';
 
+const extractUserId = (profileUrl) => {
+  if (!profileUrl) return null;
+  const userId = profileUrl.split('/user/')[1]?.split('?')[0];
+  return userId || null;
+};
+
+
 export default function ProfileScreen({ accessToken, navigation }) {
   const [profile, setProfile] = useState(null);
   const [followers, setFollowers] = useState([]);
@@ -13,31 +20,51 @@ export default function ProfileScreen({ accessToken, navigation }) {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         setProfile(response.data);
-
-        //get actual user data
+  
         setFollowers([
-          { id: '1', name: 'Hope', image: 'https://via.placeholder.com/50' },
-          { id: '2', name: 'Kristen', image: 'https://via.placeholder.com/50' },
-          { id: '3', name: 'Corn', image: 'https://via.placeholder.com/50' },
+          {
+            id: '1',
+            name: 'yikezsikes',
+            image: require('./assets/pfp 1.jpg'),
+            profileUrl: 'https://open.spotify.com/user/kotlc17?si=4ca188ead8924e8b',
+          },
+          {
+            id: '2',
+            name: 'kmcall2',
+            image: require('./assets/pfp 2.jpg'),
+            profileUrl: 'https://open.spotify.com/user/kristen.mccall.2002?si=ab88b4bf2d1a45f3',
+          },
+          {
+            id: '3',
+            name: 'cmik',
+            image: require('./assets/pfp 3.jpg'),
+            profileUrl: 'https://open.spotify.com/user/iamwilliarthekedge?si=63c8d70164084ff3',
+          },
         ]);
       } catch (error) {
         console.error('Error fetching profile:', error);
       }
     };
-
+  
     fetchProfile();
   }, [accessToken]);
-
+  
+  
+  
   const handleFollowerPress = (follower) => {
-    //nav temp- fix later
-    navigation.navigate('FollowerProfile', { follower });
+    const userId = extractUserId(follower.profileUrl);
+    if (!userId) {
+      console.error('Invalid Spotify profile URL');
+      return;
+    }
+    navigation.navigate('FollowerProfile', { follower, userId });
   };
-
+  
+  
   return (
     <View style={styles.container}>
       {profile ? (
         <>
-          {/*Profile*/}
           {profile.images && profile.images.length > 0 && (
             <Image
               source={{ uri: profile.images[0].url }}
@@ -47,7 +74,6 @@ export default function ProfileScreen({ accessToken, navigation }) {
           <Text style={styles.title}>{profile.display_name}</Text>
           <Text style={styles.email}>Email: {profile.email}</Text>
 
-          {/*Followers*/}
           <Text style={styles.sectionTitle}>Followers</Text>
           <FlatList
             data={followers}
@@ -55,8 +81,7 @@ export default function ProfileScreen({ accessToken, navigation }) {
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.followerItem}
-                onPress={() => handleFollowerPress(item)}
-              >
+                onPress={() => handleFollowerPress(item)}>
                 <Image
                   source={{ uri: item.image }}
                   style={styles.followerImage}
@@ -78,7 +103,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#CCCCFF',
   },
   profileImage: {
     width: 100,

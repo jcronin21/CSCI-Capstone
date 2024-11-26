@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
 import axios from 'axios';
 
 export default function PlaylistDetails({ route }) {
@@ -32,10 +32,18 @@ export default function PlaylistDetails({ route }) {
         keyExtractor={(item) => item.track.id}
         renderItem={({ item }) => (
           <View style={styles.trackItem}>
-            <Text style={styles.trackName}>{item.track.name}</Text>
-            <Text style={styles.trackArtist}>
-              {item.track.artists.map((artist) => artist.name).join(', ')}
-            </Text>
+            {item.track.album.images.length > 0 && (
+              <Image
+                source={{ uri: item.track.album.images[0].url }}
+                style={styles.trackImage}
+              />
+            )}
+            <View style={styles.trackInfo}>
+              <Text style={styles.trackName}>{item.track.name}</Text>
+              <Text style={styles.trackArtist}>
+                {item.track.artists.map((artist) => artist.name).join(', ')}
+              </Text>
+            </View>
           </View>
         )}
       />
@@ -47,17 +55,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor:'#CCCCFF',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
+    textAlign: 'center',
   },
   trackItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 15,
     backgroundColor: '#f9f9f9',
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  trackImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 5,
+    marginRight: 15,
+  },
+  trackInfo: {
+    flex: 1,
   },
   trackName: {
     fontSize: 16,
