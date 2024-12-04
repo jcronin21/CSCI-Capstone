@@ -1,20 +1,47 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  TextInput,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, TextInput, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { doc, updateDoc } from 'firebase/firestore';
+import { firestore } from '../backend/firebase';
 import axios from 'axios';
 
 export default function SongSelector({ route, navigation }) {
-  const { playlistId, accessToken } = route.params;
+    const { playlistId, accessToken, selectedSongs: initialSelectedSongs, setPlaylists, fetchPlaylistsFromFirebase } = route.params;
+
+    const handleAddSongs = async () => {
+        if (!accessToken) {
+          Alert.alert('Error', 'Access token is missing. Please log in again.');
+          return;
+        }
+    
+        try {
+          //update the Firebase playlist with selected songs
+          const playlistRef = doc(firestore, 'playlists', playlistId);
+          await updateDoc(playlistRef, {
+            songs: selectedSongs,  //add the selected songs to the Firebase playlist
+          });
+    
+          //refresh the playlist list by calling the passed function
+          fetchPlaylistsFromFirebase();
+    
+          Alert.alert('Success', 'Songs added to the playlist!');
+          navigation.goBack();
+        } catch (error) {
+          console.error('Error updating playlist:', error);
+          Alert.alert('Error', 'Failed to add songs to the playlist.');
+        }
+      };
+
+
+
+    //Check if accessToken is missing
+  if (!accessToken) {
+    Alert.alert('Error', 'Access token is missing. Please log in again.');
+    return null;  //return null to stop further rendering
+  }
+
   const [query, setQuery] = useState('');
   const [songs, setSongs] = useState([]);
-  const [selectedSongs, setSelectedSongs] = useState([]);
+  const [selectedSongs, setSelectedSongs] = useState(initialSelectedSongs || []);
 
   const searchTracks = async () => {
     try {
@@ -36,24 +63,9 @@ export default function SongSelector({ route, navigation }) {
     );
   };
 
-  const handleAddSongs = async () => {
-    try {
-      await axios.post(
-        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-        {
-          uris: selectedSongs.map((id) => `spotify:track:${id}`),
-        },
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-      Alert.alert('Success', 'Songs added to the playlist!');
-      navigation.goBack();
-    } catch (error) {
-      console.error('Error adding songs to playlist:', error);
-      Alert.alert('Error', 'Failed to add songs to the playlist.');
-    }
-  };
+  
+  
+  
 
   return (
     <View style={styles.container}>
@@ -101,7 +113,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    color:'#CCCCFF',
+    backgroundColor:'#CCCCFF',
   },
   input: {
     borderWidth: 1,
@@ -135,7 +147,7 @@ const styles = StyleSheet.create({
   addButton: {
     marginTop: 20,
     padding: 15,
-    backgroundColor: '#1DB954',
+    backgroundColor: '#87ceeb',
     borderRadius: 5,
     alignItems: 'center',
   },

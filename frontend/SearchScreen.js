@@ -1,27 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import {View,TextInput,FlatList,Text,StyleSheet,Image,TouchableOpacity,Alert,Modal,} from 'react-native';
+import { View, TextInput, FlatList, Text, StyleSheet, Image, TouchableOpacity, Alert, Modal } from 'react-native';
 import { Audio } from 'expo-av';
 import axios from 'axios';
+import { getDatabase, ref, set, get } from 'firebase/database'; 
 
-export default function SearchScreen({ accessToken, userPlaylists }) {
+export default function SearchScreen({ accessToken, userPlaylists = [] }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [sound, setSound] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);
+  const [firebasePlaylists, setFirebasePlaylists] = useState([]);
 
+  //playlists from Firebase (user's own playlists)
+  useEffect(() => {
+    const fetchFirebasePlaylists = async () => {
+      const db = getDatabase();
+      const userPlaylistsRef = ref(db, 'playlists/');
+      try {
+        const snapshot = await get(userPlaylistsRef);
+        if (snapshot.exists()) {
+          setFirebasePlaylists(Object.values(snapshot.val())); //store playlist(s)
+        }
+      } catch (error) {
+        console.error('Error fetching playlists from Firebase:', error);
+      }
+    };
+    fetchFirebasePlaylists();
+  }, []);
+
+  //fetching the songs from spotify based on user search
   const searchTracks = async () => {
     try {
       const response = await axios.get('https://api.spotify.com/v1/search', {
         headers: { Authorization: `Bearer ${accessToken}` },
         params: { q: query, type: 'track', limit: 10 },
       });
+      console.log("Spotify API Response:", response.data.tracks.items);
       setResults(response.data.tracks.items);
     } catch (error) {
       console.error('Error searching tracks:', error);
     }
   };
-
+  
   const playPreview = async (url) => {
     if (sound) {
       await sound.unloadAsync();
@@ -45,35 +66,39 @@ export default function SearchScreen({ accessToken, userPlaylists }) {
       Alert.alert('Error', 'Could not play the preview.');
     }
   };
-  const pausePreview = async() =>{
-    if(sound){
-      try{
+
+  const pausePreview = async () => {
+    if (sound) {
+      try {
         await sound.pauseAsync();
-      }catch(error){
-        console.error('Error pausing playback:',error);
-        Alert.alert('Error','Could not pause the preview :(');
+      } catch (error) {
+        console.error('Error pausing playback:', error);
+        Alert.alert('Error', 'Could not pause the preview :(');
       }
-    }else{
+    } else {
       Alert.alert('No audio', 'No audio is currently playing');
     }
-
   };
+
   const handleAddToPlaylist = (track) => {
     setSelectedTrack(track);
     setIsModalVisible(true);
   };
 
+  //add the selected song to the selected Firebase playlist
   const confirmAddToPlaylist = async (playlistId) => {
     try {
-      await axios.post(
-        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-        {
-          uris: [`spotify:track:${selectedTrack.id}`],
+      const db = getDatabase();
+      const playlistRef = ref(db, `playlists/${playlistId}/tracks/`);
+      await set(playlistRef, {
+        [selectedTrack.id]: {
+          id: selectedTrack.id,
+          name: selectedTrack.name,
+          artist: selectedTrack.artists[0]?.name,
+          album: selectedTrack.album?.name,
+          preview_url: selectedTrack.preview_url,
         },
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
+      });
       Alert.alert('Success', `"${selectedTrack.name}" added to the playlist!`);
     } catch (error) {
       console.error('Error adding track to playlist:', error);
@@ -100,49 +125,50 @@ export default function SearchScreen({ accessToken, userPlaylists }) {
         onChangeText={setQuery}
         onSubmitEditing={searchTracks}
       />
-      <FlatList
-        data={results}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.songItem}>
-            <Image
-              source={{ uri: item.album.images[0]?.url }}
-              style={styles.albumCover}
-            />
-            <View style={styles.songInfo}>
-              <Text style={styles.songName}>{item.name}</Text>
-              <Text style={styles.songDetails}>
-                {item.artists[0].name} • {item.album.name}
-              </Text>
-            </View>
-            {item.preview_url ? (
-              <TouchableOpacity
-                style={styles.playButton}
-                onPress={() => playPreview(item.preview_url)}
-              >
-                <Text style={styles.playButtonText}>▶</Text>
-              </TouchableOpacity>
-              
-            ) : (
-              <Text style={styles.noPreview}>No Preview</Text>
-            )}
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => handleAddToPlaylist(item)}
-            >
-              <Text style={styles.addButtonText}>+</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={styles.pauseButton}
-                onPress={() => pausePreview(item.preview_url)}
-              >
-                <Text style={styles.pauseButtonText}>||</Text>
-              </TouchableOpacity>
-            
-          </View>
-        )}
+     <FlatList
+  data={results}
+  keyExtractor={(item) => item?.id ?? item?.track?.id ?? 'defaultKey'}
+  renderItem={({ item }) => (
+    <View style={styles.songItem}>
+      <Image
+        source={{ uri: item?.album?.images[0]?.url }}
+        style={styles.albumCover}
       />
+      <View style={styles.songInfo}>
+        <Text style={styles.songName}>{item?.name}</Text>
+        <Text style={styles.songDetails}>
+          {item?.artists[0]?.name} • {item?.album?.name}
+        </Text>
+      </View>
+      {item?.preview_url ? (
+        <TouchableOpacity
+          style={styles.playButton}
+          onPress={() => playPreview(item.preview_url)}
+        >
+          <Text style={styles.playButtonText}>▶</Text>
+        </TouchableOpacity>
+      ) : (
+        <Text style={styles.noPreview}>No Preview</Text>
+      )}
+
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => handleAddToPlaylist(item)}
+      >
+        <Text style={styles.addButtonText}>+</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.pauseButton}
+        onPress={() => pausePreview()}
+      >
+        <Text style={styles.pauseButtonText}>||</Text>
+      </TouchableOpacity>
+    </View>
+  )}
+/>
+
+
       <Modal
         visible={isModalVisible}
         animationType="slide"
@@ -153,7 +179,7 @@ export default function SearchScreen({ accessToken, userPlaylists }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add "{selectedTrack?.name}" to Playlist</Text>
             <FlatList
-              data={userPlaylists}
+              data={firebasePlaylists}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -163,6 +189,7 @@ export default function SearchScreen({ accessToken, userPlaylists }) {
                   <Text style={styles.playlistName}>{item.name}</Text>
                 </TouchableOpacity>
               )}
+              
             />
             <TouchableOpacity
               style={styles.cancelButton}
@@ -233,13 +260,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
-  pauseButtonText:{
-    color:'#fff',
-    fontWeight:'bold',
-    fontSize:18,
-    color:'5A4FCF',
+  pauseButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#FFFF',
   },
-  puaseButton:{
+  pauseButton: {
     width: 30,
     height: 30,
     borderRadius: 15,
@@ -286,17 +313,16 @@ const styles = StyleSheet.create({
   },
   playlistItem: {
     padding: 10,
-    backgroundColor: '#F0F8FF',
-    marginBottom: 10,
-    borderRadius: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
   playlistName: {
     fontSize: 16,
   },
   cancelButton: {
-    marginTop: 10,
+    backgroundColor: '#FF6347',
     padding: 10,
-    backgroundColor: '#E97451',
+    marginTop: 20,
     borderRadius: 5,
   },
   cancelText: {

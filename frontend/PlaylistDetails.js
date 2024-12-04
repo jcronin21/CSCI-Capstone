@@ -7,21 +7,27 @@ export default function PlaylistDetails({ route }) {
   const [tracks, setTracks] = useState([]);
 
   useEffect(() => {
-    const fetchTracks = async () => {
+    const fetchSongDetails = async () => {
       try {
-        const response = await axios.get(
-          `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`,
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
-        setTracks(response.data.items);
+        if (playlist.songs && playlist.songs.length > 0) {
+          const songDetails = await Promise.all(
+            playlist.songs.map(async (songId) => {
+              const response = await axios.get(`https://api.spotify.com/v1/tracks/${songId}`, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+              });
+              return response.data;
+            })
+          );
+          setTracks(songDetails);
+        } else {
+          console.warn('No songs found in the playlist.');
+        }
       } catch (error) {
-        console.error('Error fetching tracks:', error);
+        console.error('Error fetching song details:', error);
       }
     };
 
-    fetchTracks();
+    fetchSongDetails();
   }, [playlist, accessToken]);
 
   return (
@@ -29,19 +35,19 @@ export default function PlaylistDetails({ route }) {
       <Text style={styles.title}>{playlist.name}</Text>
       <FlatList
         data={tracks}
-        keyExtractor={(item) => item.track.id}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.trackItem}>
-            {item.track.album.images.length > 0 && (
+            {item.album.images.length > 0 && (
               <Image
-                source={{ uri: item.track.album.images[0].url }}
+                source={{ uri: item.album.images[0].url }}
                 style={styles.trackImage}
               />
             )}
             <View style={styles.trackInfo}>
-              <Text style={styles.trackName}>{item.track.name}</Text>
+              <Text style={styles.trackName}>{item.name}</Text>
               <Text style={styles.trackArtist}>
-                {item.track.artists.map((artist) => artist.name).join(', ')}
+                {item.artists.map((artist) => artist.name).join(', ')}
               </Text>
             </View>
           </View>
@@ -55,7 +61,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor:'#CCCCFF',
+    backgroundColor: '#CCCCFF',
   },
   title: {
     fontSize: 24,

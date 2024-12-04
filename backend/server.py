@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import os
 from uuid import uuid4
 import requests
+import base64
 
 
 load_dotenv()
@@ -85,10 +86,10 @@ def search_spotify_tracks(query, token):
         print("Failed to fetch tracks:", response.status_code, response.json())
         return None
 
-#example
-token = get_spotify_token()
-tracks = search_spotify_tracks("Imagine Dragons", token)
-print(tracks)
+# #example
+# token = get_spotify_token()
+# tracks = search_spotify_tracks("Imagine Dragons", token)
+# print(tracks)
 
 
 @app.route('/spotify-login')
@@ -118,31 +119,31 @@ def auth0_login():
 
 
 #Auth0 Callback
-@app.route('/auth0-callback')
-def auth0_callback():
-    if request.args.get('state') != session.get('oauth_state'):
-        return jsonify({"error": "Invalid state parameter"}), 400
+# @app.route('/auth0-callback')
+# def auth0_callback():
+#     if request.args.get('state') != session.get('oauth_state'):
+#         return jsonify({"error": "Invalid state parameter"}), 400
 
-    try:
-        token = auth0.authorize_access_token()
-        session['access_token'] = token.get('access_token')
-        session['refresh_token'] = token.get('refresh_token')
+#     try:
+#         token = auth0.authorize_access_token()
+#         session['access_token'] = token.get('access_token')
+#         session['refresh_token'] = token.get('refresh_token')
 
-        #fetch Spotify user profile using access token
-        headers = {
-            'Authorization': f"Bearer {session['access_token']}",
-            'Content-Type': 'application/json',
-        }
-        spotify_profile = requests.get('https://api.spotify.com/v1/me', headers=headers).json()
+#         #fetch Spotify user profile using access token
+#         headers = {
+#             'Authorization': f"Bearer {session['access_token']}",
+#             'Content-Type': 'application/json',
+#         }
+#         spotify_profile = requests.get('https://api.spotify.com/v1/me', headers=headers).json()
 
-        #Store user info
-        session['user'] = spotify_profile
+#         #Store user info
+#         session['user'] = spotify_profile
 
-        #redirect
-        return redirect("http://localhost:19006/dashboard")
-    except Exception as e:
-        print(f"Auth0 Callback Error: {e}")
-        return jsonify({"error": str(e)}), 500
+#         #redirect
+#         return redirect("http://localhost:19006/dashboard")
+#     except Exception as e:
+#         print(f"Auth0 Callback Error: {e}")
+#         return jsonify({"error": str(e)}), 500
 
 
 
@@ -170,6 +171,10 @@ def dashboard():
 def logout():
     session.clear()
     return redirect(AUTH0_LOGOUT_URL)
+
+@app.route('/callback')
+def callbackTest():
+    return 'hello world'
 
 #Spotify Callback
 @app.route('/callback/spotify')

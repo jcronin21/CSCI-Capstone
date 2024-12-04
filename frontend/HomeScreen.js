@@ -1,13 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import {View,Text,FlatList,TouchableOpacity,StyleSheet,Image,Alert,Modal,TextInput,} from 'react-native';
-import axios from 'axios';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert, Modal, TextInput } from 'react-native';
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'; 
+import { firestore } from '../backend/firebase';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 export default function HomeScreen({ accessToken, navigation }) {
   const [playlists, setPlaylists] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [selectedSongs, setSelectedSongs] = useState([]);
+  const [playlistImage, setPlaylistImage] = useState(null);
+
+  const playlistsCollection = collection(firestore, 'playlists');
+
+  //fetch the playlist from Firebase
+  const fetchPlaylistsFromFirebase = async () => {
+    try {
+      const data = await getDocs(playlistsCollection);
+      const firebasePlaylists = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
+      setPlaylists(firebasePlaylists);
+    } catch (error) {
+      console.error('Error fetching playlists from Firebase:', error);
+    }
+  };
 
   useEffect(() => {
+    fetchPlaylistsFromFirebase();
+
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity
@@ -18,20 +37,7 @@ export default function HomeScreen({ accessToken, navigation }) {
         </TouchableOpacity>
       ),
     });
-
-    const fetchPlaylists = async () => {
-      try {
-        const response = await axios.get('https://api.spotify.com/v1/me/playlists', {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        setPlaylists(response.data.items);
-      } catch (error) {
-        console.error('Error fetching playlists:', error);
-      }
-    };
-
-    fetchPlaylists();
-  }, [accessToken, navigation]);
+  }, [navigation]);
 
   const handleCreatePlaylist = async () => {
     if (!newPlaylistName.trim()) {
@@ -40,43 +46,65 @@ export default function HomeScreen({ accessToken, navigation }) {
     }
 
     try {
-      const response = await axios.post(
-        'https://api.spotify.com/v1/me/playlists',
-        { name: newPlaylistName },
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-      Alert.alert('Success', `Playlist "${response.data.name}" created!`);
-      setPlaylists((prev) => [response.data, ...prev]);
-      setNewPlaylistName('');
+      const newPlaylist = {
+        name: newPlaylistName,
+        songs: selectedSongs,
+        createdAt: new Date().toISOString(),
+        image: playlistImage,
+      };
+
+      const docRef = await addDoc(playlistsCollection, newPlaylist);
+      Alert.alert('Success', `Playlist "${newPlaylistName}" created!`);
       setIsModalVisible(false);
 
       navigation.navigate('SongSelector', {
-        playlistId: response.data.id,
-        accessToken,
+        playlistId: docRef.id,
+        selectedSongs: [],
+        accessToken: accessToken,
+        setPlaylists: setPlaylists,
+        fetchPlaylistsFromFirebase: fetchPlaylistsFromFirebase,
       });
+
+      fetchPlaylistsFromFirebase();
+
     } catch (error) {
-      console.error('Error creating playlist:', error);
+      console.error('Error creating playlist in Firebase:', error);
       Alert.alert('Error', 'Could not create playlist. Please try again.');
     }
   };
 
-  const handlePlaylistPress = (playlist) => {
-    navigation.navigate('PlaylistDetails', { playlist, accessToken });
+  //this is where the user can pick the image for their playlist
+  const handlePickImage = () => {
+    launchImageLibrary(
+      { mediaType: 'photo', quality: 0.5 },
+      (response) => {
+        if (response.didCancel) {
+          return;
+        }
+        if (response.errorCode) {
+          Alert.alert('Error', 'Could not pick an image. Please try again.');
+        } else {
+          setPlaylistImage(response.assets[0].uri);  //set the image uri
+        }
+      }
+    );
   };
 
   const handleDeletePlaylist = async (playlistId) => {
     try {
-      await axios.delete(`https://api.spotify.com/v1/playlists/${playlistId}/followers`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const playlistDoc = doc(firestore, 'playlists', playlistId);
+      await deleteDoc(playlistDoc);
+
       Alert.alert('Success', 'Playlist deleted!');
       setPlaylists((prev) => prev.filter((playlist) => playlist.id !== playlistId));
     } catch (error) {
       console.error('Error deleting playlist:', error);
       Alert.alert('Error', 'Could not delete playlist. Please try again.');
     }
+  };
+
+  const handlePlaylistPress = (playlist) => {
+    navigation.navigate('PlaylistDetails', { playlist, accessToken });
   };
 
   return (
@@ -96,6 +124,12 @@ export default function HomeScreen({ accessToken, navigation }) {
               value={newPlaylistName}
               onChangeText={setNewPlaylistName}
             />
+            <TouchableOpacity style={styles.imageButton} onPress={handlePickImage}>
+              <Text style={styles.imageButtonText}>Choose Playlist Image</Text>
+            </TouchableOpacity>
+            {playlistImage && (
+              <Image source={{ uri: playlistImage }} style={styles.previewImage} />
+            )}
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.createModalButton]}
@@ -119,11 +153,8 @@ export default function HomeScreen({ accessToken, navigation }) {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.item}>
-            {item.images && item.images.length > 0 ? (
-              <Image
-                source={{ uri: item.images[0].url }}
-                style={styles.playlistImage}
-              />
+            {item.image ? (
+              <Image source={{ uri: item.image }} style={styles.playlistImage} />
             ) : (
               <View style={styles.placeholderImage}>
                 <Text style={styles.placeholderText}>No Image</Text>
@@ -153,7 +184,6 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#CCCCFF',
   },
-
   item: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -242,6 +272,22 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
   },
+  imageButton: {
+    padding: 10,
+    backgroundColor: '#87ceeb',
+    borderRadius: 5,
+    marginBottom: 15,
+  },
+  imageButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  previewImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 5,
+    marginTop: 10,
+  },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -262,6 +308,5 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: '#fff',
     textAlign: 'center',
-    fontWeight: 'bold',
   },
 });
