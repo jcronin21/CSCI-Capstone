@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import axios from 'axios';
 
 export default function PlaylistDetails({ route }) {
@@ -38,18 +38,15 @@ export default function PlaylistDetails({ route }) {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.trackItem}>
-            {item.album.images.length > 0 && (
-              <Image
-                source={{ uri: item.album.images[0].url }}
-                style={styles.trackImage}
-              />
-            )}
-            <View style={styles.trackInfo}>
-              <Text style={styles.trackName}>{item.name}</Text>
-              <Text style={styles.trackArtist}>
-                {item.artists.map((artist) => artist.name).join(', ')}
-              </Text>
-            </View>
+            <iframe
+              key={item.id}
+              src={`https://open.spotify.com/embed/track/${item.id}?utm_source=generator`}
+              width="100%"
+              height="100"
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+            ></iframe>
           </View>
         )}
       />
@@ -70,30 +67,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   trackItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#f9f9f9',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    borderRadius: 5,
     marginBottom: 10,
-  },
-  trackImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 5,
-    marginRight: 15,
-  },
-  trackInfo: {
-    flex: 1,
-  },
-  trackName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  trackArtist: {
-    fontSize: 14,
-    color: '#666',
   },
 });

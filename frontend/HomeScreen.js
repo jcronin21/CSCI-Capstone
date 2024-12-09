@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert, Modal, TextInput } from 'react-native';
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'; 
+import { where,collection, getDocs,query, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'; 
 import { firestore } from '../backend/firebase';
 import { launchImageLibrary } from 'react-native-image-picker';
+import PlaylistDetails from './PlaylistDetails';
+
 
 export default function HomeScreen({ accessToken, navigation }) {
   const [playlists, setPlaylists] = useState([]);
@@ -16,13 +18,16 @@ export default function HomeScreen({ accessToken, navigation }) {
   //fetch the playlist from Firebase
   const fetchPlaylistsFromFirebase = async () => {
     try {
-      const data = await getDocs(playlistsCollection);
+      const q = query(playlistsCollection,where('username', '==','jcronin'));
+      const data = await getDocs(q);
       const firebasePlaylists = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
       setPlaylists(firebasePlaylists);
+      console.log(firebasePlaylists);
     } catch (error) {
       console.error('Error fetching playlists from Firebase:', error);
     }
   };
+  
 
   useEffect(() => {
     fetchPlaylistsFromFirebase();
@@ -35,6 +40,7 @@ export default function HomeScreen({ accessToken, navigation }) {
         >
           <Text style={styles.createButtonText}>Create</Text>
         </TouchableOpacity>
+        
       ),
     });
   }, [navigation]);

@@ -1,27 +1,50 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 
 export default function FollowerProfile({ route }) {
   const { follower } = route.params;
 
-  // Demo playlists for each user
   const initialPlaylists = {
     yikezsikes: [
-      { id: '1', name: 'lake day', upvotes: 0, downvotes: 0, hasVoted: false },
-      { id: '2', name: 'workout', upvotes: 0, downvotes: 0, hasVoted: false },
+      {
+        id: '1',
+        name: 'lake day',
+        upvotes: 0,
+        downvotes: 0,
+        hasVoted: false,
+        songs: [
+          { name: 'Good Vibrations - The Beach Boys', image: require('./assets/good.jpg') },
+          { name: 'Sitting on the Dock of the Bay - Otis Redding', image: require('./assets/dock.jpg') },
+        ],
+      },
+      {
+        id: '2',
+        name: 'workout',
+        upvotes: 0,
+        downvotes: 0,
+        hasVoted: false,
+        songs: [
+          { name: 'Eye of the Tiger - Survivor', image:require('./assets/tiger.jpg') },
+          { name: 'Stronger - Kanye West', image:require('./assets/stronger.jpg') },
+        ],
+      },
     ],
     kmcall2: [
-      { id: '1', name: 'birthday party!', upvotes: 0, downvotes: 0, hasVoted: false },
-      { id: '2', name: 'dinner mix', upvotes: 0, downvotes: 0, hasVoted: false },
-    ],
-    cmik: [
-      { id: '1', name: 'classic rock', upvotes: 0, downvotes: 0, hasVoted: false },
-      { id: '2', name: 'road trip', upvotes: 0, downvotes: 0, hasVoted: false },
+      {
+        id: '1',
+        name: 'birthday party!',
+        upvotes: 0,
+        downvotes: 0,
+        hasVoted: false,
+        songs: [
+          { name: 'Happy Birthday - Stevie Wonder', image:require('./assets/wonder.jpeg') },
+          { name: 'Celebration - Kool & The Gang', image:require('./assets/celebration.jpg') },
+        ],
+      },
     ],
   };
 
   const [playlists, setPlaylists] = useState(initialPlaylists[follower.name] || []);
-//user only allowed one vote per playlist
   const handleVote = (playlistId, type) => {
     setPlaylists((prev) =>
       prev.map((playlist) => {
@@ -47,6 +70,12 @@ export default function FollowerProfile({ route }) {
         renderItem={({ item }) => (
           <View style={styles.playlistItem}>
             <Text style={styles.playlistName}>{item.name}</Text>
+            {item.songs.map((song, index) => (
+              <View key={index} style={styles.songItem}>
+                <Image source={{ uri: song.image }} style={styles.albumArt} />
+                <Text style={styles.songName}>{song.name}</Text>
+              </View>
+            ))}
             <Text>Upvotes: {item.upvotes}</Text>
             <Text>Downvotes: {item.downvotes}</Text>
             <TouchableOpacity
@@ -72,7 +101,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#CCCCFF',
+    backgroundColor: '#CCCCFF', 
   },
   title: {
     fontSize: 24,
@@ -92,7 +121,20 @@ const styles = StyleSheet.create({
   playlistName: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 10,
+  },
+  songItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 5,
+  },
+  albumArt: {
+    width: 50,
+    height: 50,
+    marginRight: 10,
+  },
+  songName: {
+    fontSize: 16,
   },
   voteButton: {
     marginTop: 10,

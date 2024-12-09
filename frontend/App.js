@@ -34,13 +34,13 @@ const HomeStack = ({ accessToken }) => (
 
 const ProfileStack = ({ accessToken }) => (
   <Stack.Navigator>
-    <Stack.Screen name="ProfileScreen">
+    <Stack.Screen name="Your Profile">
       {(props) => <ProfileScreen {...props} accessToken={accessToken} />}
     </Stack.Screen>
     <Stack.Screen
       name="FollowerProfile"
       component={FollowerProfile}
-      options={{ title: 'Follower Profile' }}
+      options={{ title: '' }}
     />
   </Stack.Navigator>
 );
@@ -49,7 +49,6 @@ export default function App() {
   const [accessToken, setAccessToken] = useState(null);
 
   useEffect(() => {
-    //put your own token here
     const hardcodedToken = '';
     setAccessToken(hardcodedToken);
   }, []);

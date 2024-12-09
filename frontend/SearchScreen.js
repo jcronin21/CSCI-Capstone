@@ -129,42 +129,18 @@ export default function SearchScreen({ accessToken, userPlaylists = [] }) {
   data={results}
   keyExtractor={(item) => item?.id ?? item?.track?.id ?? 'defaultKey'}
   renderItem={({ item }) => (
-    <View style={styles.songItem}>
-      <Image
-        source={{ uri: item?.album?.images[0]?.url }}
-        style={styles.albumCover}
-      />
-      <View style={styles.songInfo}>
-        <Text style={styles.songName}>{item?.name}</Text>
-        <Text style={styles.songDetails}>
-          {item?.artists[0]?.name} • {item?.album?.name}
-        </Text>
-      </View>
-      {item?.preview_url ? (
-        <TouchableOpacity
-          style={styles.playButton}
-          onPress={() => playPreview(item.preview_url)}
-        >
-          <Text style={styles.playButtonText}>▶</Text>
-        </TouchableOpacity>
-      ) : (
-        <Text style={styles.noPreview}>No Preview</Text>
-      )}
-
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => handleAddToPlaylist(item)}
-      >
-        <Text style={styles.addButtonText}>+</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.pauseButton}
-        onPress={() => pausePreview()}
-      >
-        <Text style={styles.pauseButtonText}>||</Text>
-      </TouchableOpacity>
-    </View>
+    <>
+    <iframe
+    key="1EjQRTG53jsinzk2xlVVJP"
+    src={"https://open.spotify.com/embed/track/"+item.id+"?utm_source=generator"} 
+    width="100%" 
+    border="0"
+    height="100" 
+    frameBorder="0"
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+    loading="lazy"></iframe>
+    
+    </>
   )}
 />
 
