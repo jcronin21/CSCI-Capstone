@@ -75,10 +75,3 @@ yarn-error.*
 
 # @end expo-cli
 
-#js
-index.js
-server.js
-firebase.js
-
-#py
-server.py
