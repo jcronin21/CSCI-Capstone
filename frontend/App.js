@@ -4,9 +4,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import 'react-native-get-random-values';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-
-//screens
 import HomeScreen from './HomeScreen';
 import PlaylistDetails from './PlaylistDetails';
 import SongSelector from './SongSelector';
@@ -49,44 +49,47 @@ export default function App() {
   const [accessToken, setAccessToken] = useState(null);
 
   useEffect(() => {
-    const hardcodedToken = '';
-    setAccessToken(hardcodedToken);
+    const token = '';
+    setAccessToken(token);
   }, []);
 
   return (
-    <NavigationContainer>
-      {accessToken ? (
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            tabBarIcon: ({ focused, color, size }) => {
-              let iconName;
-              if (route.name === 'Home') {
-                iconName = focused ? 'home' : 'home-outline';
-              } else if (route.name === 'Search') {
-                iconName = focused ? 'search' : 'search-outline';
-              } else if (route.name === 'Profile') {
-                iconName = focused ? 'person' : 'person-outline';
-              }
-              return <Ionicons name={iconName} size={size} color={color} />;
-            },
-            tabBarActiveTintColor: '#8f5bce',
-            tabBarInactiveTintColor: '#050707',
-            headerShown: false,
-          })}
-        >
-          <Tab.Screen name="Home">
-            {(props) => <HomeStack {...props} accessToken={accessToken} />}
-          </Tab.Screen>
-          <Tab.Screen name="Search">
-            {(props) => <SearchScreen {...props} accessToken={accessToken} />}
-          </Tab.Screen>
-          <Tab.Screen name="Profile">
-            {(props) => <ProfileStack {...props} accessToken={accessToken} />}
-          </Tab.Screen>
-        </Tab.Navigator>
-      ) : (
-        <LoginScreen setAccessToken={setAccessToken} />
-      )}
-    </NavigationContainer>
+    <>
+      <NavigationContainer>
+        {accessToken ? (
+          <Tab.Navigator
+            screenOptions={({ route }) => ({
+              tabBarIcon: ({ focused, color, size }) => {
+                let iconName;
+                if (route.name === 'Home') {
+                  iconName = focused ? 'home' : 'home-outline';
+                } else if (route.name === 'Search') {
+                  iconName = focused ? 'search' : 'search-outline';
+                } else if (route.name === 'Profile') {
+                  iconName = focused ? 'person' : 'person-outline';
+                }
+                return <Ionicons name={iconName} size={size} color={color} />;
+              },
+              tabBarActiveTintColor: '#8f5bce',
+              tabBarInactiveTintColor: '#050707',
+              headerShown: false,
+            })}
+          >
+            <Tab.Screen name="Home">
+              {(props) => <HomeStack {...props} accessToken={accessToken} />}
+            </Tab.Screen>
+            <Tab.Screen name="Search">
+              {(props) => <SearchScreen {...props} accessToken={accessToken} />}
+            </Tab.Screen>
+            <Tab.Screen name="Profile">
+              {(props) => <ProfileStack {...props} accessToken={accessToken} />}
+            </Tab.Screen>
+          </Tab.Navigator>
+        ) : (
+          <LoginScreen setAccessToken={setAccessToken} />
+        )}
+      </NavigationContainer>
+      <ToastContainer />
+    </>
   );
 }

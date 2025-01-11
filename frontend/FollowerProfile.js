@@ -1,50 +1,36 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import { getDatabase, ref, get } from 'firebase/database';
 
 export default function FollowerProfile({ route }) {
   const { follower } = route.params;
+  const [playlists, setPlaylists] = useState([]);
 
-  const initialPlaylists = {
-    yikezsikes: [
-      {
-        id: '1',
-        name: 'lake day',
-        upvotes: 0,
-        downvotes: 0,
-        hasVoted: false,
-        songs: [
-          { name: 'Good Vibrations - The Beach Boys', image: require('./assets/good.jpg') },
-          { name: 'Sitting on the Dock of the Bay - Otis Redding', image: require('./assets/dock.jpg') },
-        ],
-      },
-      {
-        id: '2',
-        name: 'workout',
-        upvotes: 0,
-        downvotes: 0,
-        hasVoted: false,
-        songs: [
-          { name: 'Eye of the Tiger - Survivor', image:require('./assets/tiger.jpg') },
-          { name: 'Stronger - Kanye West', image:require('./assets/stronger.jpg') },
-        ],
-      },
-    ],
-    kmcall2: [
-      {
-        id: '1',
-        name: 'birthday party!',
-        upvotes: 0,
-        downvotes: 0,
-        hasVoted: false,
-        songs: [
-          { name: 'Happy Birthday - Stevie Wonder', image:require('./assets/wonder.jpeg') },
-          { name: 'Celebration - Kool & The Gang', image:require('./assets/celebration.jpg') },
-        ],
-      },
-    ],
-  };
+  useEffect(() => {
+    const fetchPlaylists = async () => {
+      try {
+        const db = getDatabase();
+        const userRef = ref(db, `playlists`);
+        const snapshot = await get(userRef);
 
-  const [playlists, setPlaylists] = useState(initialPlaylists[follower.name] || []);
+        if (snapshot.exists()) {
+          const allPlaylists = snapshot.val();
+          const filteredPlaylists = Object.values(allPlaylists).filter(
+            (playlist) => playlist.username === follower.email
+          );
+
+          setPlaylists(filteredPlaylists);
+        } else {
+          console.log('No playlists found for this follower.');
+        }
+      } catch (error) {
+        console.error('Error fetching playlists:', error);
+      }
+    };
+
+    fetchPlaylists();
+  }, [follower.email]);
+
   const handleVote = (playlistId, type) => {
     setPlaylists((prev) =>
       prev.map((playlist) => {
@@ -63,36 +49,43 @@ export default function FollowerProfile({ route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{follower.name}'s Playlists</Text>
-      <FlatList
-        data={playlists}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.playlistItem}>
-            <Text style={styles.playlistName}>{item.name}</Text>
-            {item.songs.map((song, index) => (
-              <View key={index} style={styles.songItem}>
-                <Image source={{ uri: song.image }} style={styles.albumArt} />
-                <Text style={styles.songName}>{song.name}</Text>
-              </View>
-            ))}
-            <Text>Upvotes: {item.upvotes}</Text>
-            <Text>Downvotes: {item.downvotes}</Text>
-            <TouchableOpacity
-              style={styles.voteButton}
-              onPress={() => handleVote(item.id, 'upvote')}
-            >
-              <Text style={styles.voteText}>Upvote</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.voteButton}
-              onPress={() => handleVote(item.id, 'downvote')}
-            >
-              <Text style={styles.voteText}>Downvote</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+      <Text style={styles.title}>{follower.email}'s Playlists</Text>
+      {playlists.length > 0 ? (
+        <FlatList
+          data={playlists}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.playlistItem}>
+              <Text style={styles.playlistName}>{item.name}</Text>
+              {item.songs.map((song, index) => (
+                <View key={index} style={styles.songItem}>
+                  <Image
+                    source={song.image ? { uri: song.image } : require('./assets/placeholder.jpg')}
+                    style={styles.albumArt}
+                  />
+                  <Text style={styles.songName}>{song.name}</Text>
+                </View>
+              ))}
+              <Text>Upvotes: {item.upvotes}</Text>
+              <Text>Downvotes: {item.downvotes}</Text>
+              <TouchableOpacity
+                style={styles.voteButton}
+                onPress={() => handleVote(item.id, 'upvote')}
+              >
+                <Text style={styles.voteText}>Upvote</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.voteButton}
+                onPress={() => handleVote(item.id, 'downvote')}
+              >
+                <Text style={styles.voteText}>Downvote</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      ) : (
+        <Text style={styles.noPlaylistsText}>No playlists available for this user.</Text>
+      )}
     </View>
   );
 }
@@ -101,7 +94,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#CCCCFF', 
+    backgroundColor: '#CCCCFF',
   },
   title: {
     fontSize: 24,
@@ -145,5 +138,11 @@ const styles = StyleSheet.create({
   voteText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  noPlaylistsText: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

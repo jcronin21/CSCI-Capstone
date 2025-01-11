@@ -1,36 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert, Modal, TextInput } from 'react-native';
-import { where,collection, getDocs,query, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'; 
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Modal, TextInput } from 'react-native';
+import { where, collection, getDocs, query, addDoc, deleteDoc, doc } from 'firebase/firestore'; 
+import { getAuth } from 'firebase/auth';
 import { firestore } from '../backend/firebase';
 import { launchImageLibrary } from 'react-native-image-picker';
-import PlaylistDetails from './PlaylistDetails';
-
+import Toast from 'react-native-toast-message';
 
 export default function HomeScreen({ accessToken, navigation }) {
   const [playlists, setPlaylists] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
-  const [selectedSongs, setSelectedSongs] = useState([]);
   const [playlistImage, setPlaylistImage] = useState(null);
 
-  const playlistsCollection = collection(firestore, 'playlists');
-
-  //fetch the playlist from Firebase
-  const fetchPlaylistsFromFirebase = async () => {
-    try {
-      const q = query(playlistsCollection,where('username', '==','jcronin'));
-      const data = await getDocs(q);
-      const firebasePlaylists = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
-      setPlaylists(firebasePlaylists);
-      console.log(firebasePlaylists);
-    } catch (error) {
-      console.error('Error fetching playlists from Firebase:', error);
-    }
-  };
-  
+  const auth = getAuth(); //Firebase Auth
+  const user = auth.currentUser; //get the current logged in user
 
   useEffect(() => {
-    fetchPlaylistsFromFirebase();
+    if (user) {
+      fetchPlaylistsFromFirebase();
+    }
 
     navigation.setOptions({
       headerRight: () => (
@@ -40,46 +28,103 @@ export default function HomeScreen({ accessToken, navigation }) {
         >
           <Text style={styles.createButtonText}>Create</Text>
         </TouchableOpacity>
-        
       ),
     });
-  }, [navigation]);
+  }, [navigation, user]);
+
+  const fetchPlaylistsFromFirebase = async () => {
+    try {
+      if (!user) return; //making sure the user is auth
+      const playlistsCollection = collection(firestore, 'playlists');
+      const q = query(playlistsCollection, where('username', '==', user.email)); //query logged in user playlists
+      const data = await getDocs(q);
+      const firebasePlaylists = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
+      setPlaylists(firebasePlaylists);
+    } catch (error) {
+      console.error('Error fetching playlists from Firebase:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to fetch playlists.',
+      });
+    }
+  };
 
   const handleCreatePlaylist = async () => {
     if (!newPlaylistName.trim()) {
-      Alert.alert('Error', 'Playlist name cannot be empty.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Playlist name cannot be empty.',
+      });
       return;
     }
 
     try {
+      if (!user) return;
+
       const newPlaylist = {
         name: newPlaylistName,
-        songs: selectedSongs,
+        songs: [],
         createdAt: new Date().toISOString(),
         image: playlistImage,
+        username: user.email, 
       };
 
+      const playlistsCollection = collection(firestore, 'playlists');
       const docRef = await addDoc(playlistsCollection, newPlaylist);
-      Alert.alert('Success', `Playlist "${newPlaylistName}" created!`);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: `Playlist "${newPlaylistName}" created!`,
+      });
+
       setIsModalVisible(false);
+      setNewPlaylistName('');
+      setPlaylistImage(null);
 
       navigation.navigate('SongSelector', {
         playlistId: docRef.id,
         selectedSongs: [],
-        accessToken: accessToken,
-        setPlaylists: setPlaylists,
-        fetchPlaylistsFromFirebase: fetchPlaylistsFromFirebase,
+        accessToken,
+        setPlaylists,
+        fetchPlaylistsFromFirebase,
       });
 
       fetchPlaylistsFromFirebase();
-
     } catch (error) {
       console.error('Error creating playlist in Firebase:', error);
-      Alert.alert('Error', 'Could not create playlist. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Could not create playlist.',
+      });
     }
   };
 
-  //this is where the user can pick the image for their playlist
+  const handleDeletePlaylist = async (playlistId) => {
+    try {
+      const playlistDoc = doc(firestore, 'playlists', playlistId);
+      await deleteDoc(playlistDoc);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Playlist deleted!',
+      });
+
+      setPlaylists((prev) => prev.filter((playlist) => playlist.id !== playlistId));
+    } catch (error) {
+      console.error('Error deleting playlist:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Could not delete playlist.',
+      });
+    }
+  };
+
   const handlePickImage = () => {
     launchImageLibrary(
       { mediaType: 'photo', quality: 0.5 },
@@ -88,29 +133,21 @@ export default function HomeScreen({ accessToken, navigation }) {
           return;
         }
         if (response.errorCode) {
-          Alert.alert('Error', 'Could not pick an image. Please try again.');
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'Could not pick an image.',
+          });
         } else {
-          setPlaylistImage(response.assets[0].uri);  //set the image uri
+          setPlaylistImage(response.assets[0].uri);
+          Toast.show({
+            type: 'info',
+            text1: 'Image Selected',
+            text2: 'Playlist image added.',
+          });
         }
       }
     );
-  };
-
-  const handleDeletePlaylist = async (playlistId) => {
-    try {
-      const playlistDoc = doc(firestore, 'playlists', playlistId);
-      await deleteDoc(playlistDoc);
-
-      Alert.alert('Success', 'Playlist deleted!');
-      setPlaylists((prev) => prev.filter((playlist) => playlist.id !== playlistId));
-    } catch (error) {
-      console.error('Error deleting playlist:', error);
-      Alert.alert('Error', 'Could not delete playlist. Please try again.');
-    }
-  };
-
-  const handlePlaylistPress = (playlist) => {
-    navigation.navigate('PlaylistDetails', { playlist, accessToken });
   };
 
   return (
@@ -130,7 +167,10 @@ export default function HomeScreen({ accessToken, navigation }) {
               value={newPlaylistName}
               onChangeText={setNewPlaylistName}
             />
-            <TouchableOpacity style={styles.imageButton} onPress={handlePickImage}>
+            <TouchableOpacity
+              style={styles.imageButton}
+              onPress={handlePickImage}
+            >
               <Text style={styles.imageButtonText}>Choose Playlist Image</Text>
             </TouchableOpacity>
             {playlistImage && (
@@ -167,9 +207,7 @@ export default function HomeScreen({ accessToken, navigation }) {
               </View>
             )}
             <View style={styles.infoContainer}>
-              <TouchableOpacity onPress={() => handlePlaylistPress(item)}>
-                <Text style={styles.playlistName}>{item.name}</Text>
-              </TouchableOpacity>
+              <Text style={styles.playlistName}>{item.name}</Text>
               <TouchableOpacity
                 style={styles.deleteButton}
                 onPress={() => handleDeletePlaylist(item.id)}
@@ -180,6 +218,7 @@ export default function HomeScreen({ accessToken, navigation }) {
           </View>
         )}
       />
+      <Toast />
     </View>
   );
 }
@@ -266,23 +305,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   textInput: {
     width: '100%',
+    height: 40,
+    borderColor: '#E97451',
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 5,
-    padding: 10,
+    paddingLeft: 10,
     marginBottom: 15,
   },
   imageButton: {
+    backgroundColor: '#E97451',
     padding: 10,
-    backgroundColor: '#87ceeb',
     borderRadius: 5,
-    marginBottom: 15,
+    marginBottom: 10,
   },
   imageButtonText: {
     color: '#fff',
@@ -292,7 +332,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 5,
-    marginTop: 10,
+    marginBottom: 10,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -300,19 +340,19 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalButton: {
-    flex: 1,
     padding: 10,
-    marginHorizontal: 5,
     borderRadius: 5,
+    width: '48%',
   },
   createModalButton: {
-    backgroundColor: '#87ceeb',
+    backgroundColor: '#E97451',
   },
   cancelModalButton: {
-    backgroundColor: '#888',
+    backgroundColor: '#ccc',
   },
   modalButtonText: {
-    color: '#fff',
     textAlign: 'center',
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });

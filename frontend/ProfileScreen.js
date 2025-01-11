@@ -1,66 +1,117 @@
 import React, { useEffect, useState } from 'react';
-import {View,Text,StyleSheet,Image,FlatList,TouchableOpacity,} from 'react-native';
-import axios from 'axios';
-
-const extractUserId = (profileUrl) => {
-  if (!profileUrl) return null;
-  const userId = profileUrl.split('/user/')[1]?.split('?')[0];
-  return userId || null;
-};
-
+import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity } from 'react-native';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../backend/firebase';
+import Toast from 'react-native-toast-message';
 
 export default function ProfileScreen({ accessToken, navigation }) {
   const [profile, setProfile] = useState(null);
   const [followers, setFollowers] = useState([]);
+  const [user, setUser] = useState(null);
+  const [selectedFollowerPlaylists, setSelectedFollowerPlaylists] = useState(null); //playlists of followers
+  const [selectedPlaylistVotes, setSelectedPlaylistVotes] = useState({}); //votes for playlists
+  const [messages, setMessages] = useState([]); //notif wall
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const auth = getAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+      } else {
+        console.log('No user logged in');
+        navigation.navigate('Login');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigation]);
+
+  //spotify profile data
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get('https://api.spotify.com/v1/me', {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        setProfile(response.data);
-  
-        setFollowers([
-          {
-            id: '1',
-            name: 'yikezsikes',
-            image: require('./assets/pfp 1.jpg'),
-            profileUrl: 'https://open.spotify.com/user/kotlc17?si=4ca188ead8924e8b',
-          },
-          {
-            id: '2',
-            name: 'kmcall2',
-            image: require('./assets/pfp 2.jpg'),
-            profileUrl: 'https://open.spotify.com/user/kristen.mccall.2002?si=ab88b4bf2d1a45f3',
-          },
-          {
-            id: '3',
-            name: 'cmik',
-            image: require('./assets/pfp 3.jpg'),
-            profileUrl: 'https://open.spotify.com/user/iamwilliarthekedge?si=63c8d70164084ff3',
-          },
-        ]);
+        if (user && accessToken) {
+          const profileResponse = await fetch('https://api.spotify.com/v1/me', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          const profileData = await profileResponse.json();
+          setProfile(profileData);
+
+          const collectionRef = collection(db, 'users');
+          const querySnapshot = await getDocs(collectionRef);
+
+          const userDoc = querySnapshot.docs.find(
+            (doc) => doc.data().email === user.email
+          );
+
+          if (userDoc) {
+            const data = userDoc.data();
+            setFollowers(data.followers || []);
+            setMessages(data.messages || []); //show all notifications
+          } else {
+            console.log('User document not found in Firestore');
+          }
+        }
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error('Error fetching profile or followers:', error);
       }
     };
-  
-    fetchProfile();
-  }, [accessToken]);
-  
-  
-  
-  const handleFollowerPress = (follower) => {
-    const userId = extractUserId(follower.profileUrl);
-    if (!userId) {
-      console.error('Invalid Spotify profile URL');
-      return;
+
+    fetchData();
+  }, [user, accessToken]);
+
+  //get the follower's playlists
+  const fetchFollowerPlaylists = async (followerName) => {
+    try {
+      const followerDoc = await getDocs(collection(db, 'playlists'));
+      const playlists = [];
+
+      followerDoc.forEach((doc) => {
+        if (doc.data().username === followerName) {
+          playlists.push(doc.data());
+        }
+      });
+
+      setSelectedFollowerPlaylists(playlists);
+    } catch (error) {
+      console.error('Error fetching follower playlists:', error);
     }
-    navigation.navigate('FollowerProfile', { follower, userId });
   };
-  
-  
+
+  //handle the votes
+  const handleVote = async (playlistId, voteType) => {
+    try {
+      const playlistRef = doc(db, 'playlists', playlistId);
+
+      //update the playlist with the new vote
+      await updateDoc(playlistRef, { vote: voteType });
+
+      setSelectedPlaylistVotes((prevVotes) => ({
+        ...prevVotes,
+        [playlistId]: voteType,
+      }));
+
+      //show notifs
+      Toast.show({
+        type: 'success',
+        text1: `Playlist ${voteType}!`,
+      });
+    } catch (error) {
+      console.error('Error handling vote:', error);
+    }
+  };
+
+  //ratings
+  const handleRate = (playlistName, rating) => {
+    Toast.show({
+      type: 'info',
+      text1: `Playlist "${playlistName}" rated as:`,
+      text2: `${rating}`,
+    });
+  };
+
   return (
     <View style={styles.container}>
       {profile ? (
@@ -75,25 +126,83 @@ export default function ProfileScreen({ accessToken, navigation }) {
           <Text style={styles.email}>Email: {profile.email}</Text>
 
           <Text style={styles.sectionTitle}>Followers</Text>
-          <FlatList
-            data={followers}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.followerItem}
-                onPress={() => handleFollowerPress(item)}>
-                <Image
-                  source={{ uri: item.image }}
-                  style={styles.followerImage}
-                />
-                <Text style={styles.followerName}>{item.name}</Text>
-              </TouchableOpacity>
-            )}
-          />
+          {followers.length > 0 ? (
+            <FlatList
+              data={followers}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.followerItem}>
+                  <TouchableOpacity onPress={() => fetchFollowerPlaylists(item)}>
+                    <Text style={styles.followerName}>{item}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+          ) : (
+            <Text style={styles.noFollowersText}>
+              You have no followers yet!
+            </Text>
+          )}
+
+          {selectedFollowerPlaylists && selectedFollowerPlaylists.length > 0 && (
+            <View style={styles.playlistsSection}>
+              <Text style={styles.sectionTitle}>Follower's Playlists</Text>
+              <FlatList
+                data={selectedFollowerPlaylists}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => (
+                  <View style={styles.playlistItem}>
+                    <Text style={styles.playlistName}>{item.name}</Text>
+                    <View style={styles.voteButtons}>
+                      <TouchableOpacity
+                        onPress={() => handleVote(item.id, 'upvoted')}>
+                        <Text style={styles.voteButton}>👍</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleVote(item.id, 'downvoted')}>
+                        <Text style={styles.voteButton}>👎</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.ratingButtons}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          handleRate(item.name, 'Best Music Taste')
+                        }>
+                        <Text style={styles.rateButton}>Rate as: Best Music Taste</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() =>
+                          handleRate(item.name, 'Smooth Music Transitions')
+                        }>
+                        <Text style={styles.rateButton}>
+                          Rate as: Smooth Music Transitions
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              />
+            </View>
+          )}
+          <Text style={styles.sectionTitle}>Notifications</Text>
+          {messages.length > 0 ? (
+            <FlatList
+              data={messages}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.notificationItem}>
+                  <Text>{item}</Text>
+                </View>
+              )}
+            />
+          ) : (
+            <Text>No new notifications</Text>
+          )}
         </>
       ) : (
         <Text>Loading...</Text>
       )}
+      <Toast />
     </View>
   );
 }
@@ -128,11 +237,34 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 10,
   },
+  noFollowersText: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 20,
+  },
   followerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
     padding: 10,
+    marginBottom: 5,
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
+    width: '90%',
+  },
+  followerName: {
+    fontSize: 16,
+    color: '#333',
+  },
+  playlistsSection: {
+    marginTop: 20,
+    width: '90%',
+  },
+  playlistItem: {
+    padding: 10,
+    marginBottom: 5,
     backgroundColor: '#fff',
     borderRadius: 5,
     shadowColor: '#000',
@@ -140,13 +272,36 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 2,
   },
-  followerImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  playlistName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  voteButtons: {
+    flexDirection: 'row',
+    marginTop: 5,
+  },
+  voteButton: {
+    fontSize: 18,
     marginRight: 10,
   },
-  followerName: {
-    fontSize: 16,
+  ratingButtons: {
+    marginTop: 10,
+  },
+  rateButton: {
+    fontSize: 14,
+    color: '#007BFF',
+    marginVertical: 5,
+  },
+  notificationItem: {
+    padding: 10,
+    marginBottom: 5,
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
+    width: '90%',
   },
 });
